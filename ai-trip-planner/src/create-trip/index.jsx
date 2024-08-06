@@ -1,12 +1,93 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { Input } from "@/components/ui/input"
+import GooglePlacesAutocomplete from 'react-google-places-autocomplete'
+import { SelectBudgteOptions, SelectTravelList } from '@/components/constants/optinos';
+import { Button } from '@/components/ui/button';
 
 function CreateTrip() {
+  const [place,setPlace] = useState();
+  const [formdata, setFormdata] = useState([]);
+
+  let handleInputChange = (name,value)=>{
+
+    setFormdata({
+      ...formdata, 
+      [name] : value
+    })
+  } 
+
+  const onCreateTrip = ()=>{
+    if(formdata?.noOfDays>5){
+      return;
+    }
+  }
+  useEffect(()=>{
+    console.log(formdata);
+  },[formdata])
+
   return (
-    <div>
-      
+    <div className='sm:px-10 md:px-32 lg:px-56 xl:px-72 px-5 mt-10'>
+      <h1 className="text-3xl font-oswald">Tell us your travel preferences <span role="img" aria-label="tent">⛺</span> <span role="img" aria-label="palm tree">🌴</span></h1>
+      <p className="text-gray-600 mt-4">Just provide some basic information, and our trip planner will generate a customized itinerary based on your preferences.</p>
+
+      <div className='mt-20 flex flex-col gap-10'>
+        <div>
+          <h2 className='text-lg mb-3'>What is your destination of choice?</h2>
+          <GooglePlacesAutocomplete
+            apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+            selectProps={{
+              place,
+              onchange : (v)=>{setPlace(v);console.log(v); handleInputChange('location',v)} 
+            }}
+          />
+        </div>
+
+        <div>
+          <h2 className='text-lg mb-3'>What is your destination of choice?</h2>
+          <Input placeholder={'ex-3'} type="number"
+          onChange={(e) => handleInputChange('noOfDays', e.target.value)}/>
+        </div>
+
+
+        <div>
+          <h2 className='text-lg mb-3'>What is Your Budget?</h2>
+          <div className='grid grid-cols-3 gap-5 mt-3' >
+            {SelectBudgteOptions.map((item,index) =>(
+              <div key={index}
+              onClick={() => handleInputChange('budget', item.title)}
+              className={`p-4 border cursor-pointer rounded-lg hover:shadow-lg
+              ${formdata?.budget==item.title&&'border-black shadow-lg'}`}>
+                <h2 className='text-3xl'>{item.icon}</h2>
+                  <h2 className='font-bold text-lg'>{item.title}</h2>
+                  <h2 className='text-gray-500'>{item.desc}</h2>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h2 className='text-lg mb-3'>Who do you plan on traveling with on your next adventure?</h2>
+          <div className='grid grid-cols-3 gap-5 mt-3'>
+            {SelectTravelList.map((item,index)=>(
+              <div key={index}
+              onClick={() => handleInputChange('traveler',item.people)}
+              className={`p-4 border cursor-pointer rounded-lg hover:shadow-md
+              ${formdata?.traveler==item.people&&'border-black shadow-lg'}`}>
+                <h2 className='text-4xl'>{item.icon}</h2>
+                  <h2 className='font-bold text-lg'>{item.title}</h2>
+                  <h2 className='text-gray-500'>{item.desc}</h2> 
+                
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className='my-8 flex justify-end' onClick={()=>onCreateTrip()}>
+        <Button>Create Trip</Button>
+      </div>
     </div>
+
   )
 }
 
 export default CreateTrip
-
