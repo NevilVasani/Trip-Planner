@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { Input } from "@/components/ui/input"
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete'
-import { SelectBudgteOptions, SelectTravelList } from '@/components/constants/optinos';
+import { AI_PROMPT, SelectBudgteOptions, SelectTravelList } from '@/components/constants/optinos';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { chatSession } from '@/servies/Aimodel';
 
 function CreateTrip() {
   const [place,setPlace] = useState();
@@ -16,10 +18,24 @@ function CreateTrip() {
     })
   } 
 
-  const onCreateTrip = ()=>{
-    if(formdata?.noOfDays>5){
+  const onCreateTrip = async ()=>{
+    if(formdata?.noOfDays>5 || !formdata?.budget || !formdata?.noOfDays || !formdata?.location || !formdata?.traveler){
+      toast("Fill all the valid details !!!")
       return;
     }
+    //.replace('{location}', formdata?.location?.lable)     for when add google auto place api integrate
+    const FINAL_PROMPT = AI_PROMPT
+    .replace('{location}', formdata?.location?.label)
+    .replace('{noOfDays}', formdata?.noOfDays)
+    .replace('{traveler}', formdata?.traveler)
+    .replace('{budget}', formdata?.budget)
+    .replace('{noOfDays}', formdata?.noOfDays)
+
+    console.log(FINAL_PROMPT);
+
+    const result = await chatSession.sendMessage(FINAL_PROMPT);
+
+    console.log(result?.response?.text());
   }
   useEffect(()=>{
     console.log(formdata);
@@ -37,9 +53,12 @@ function CreateTrip() {
             apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
             selectProps={{
               place,
-              onchange : (v)=>{setPlace(v);console.log(v); handleInputChange('location',v)} 
+              onChange : (v)=>{setPlace(v);console.log(v); handleInputChange('location',v)} 
             }}
           />
+          {/* <Input placeholder={'Location'} type = "string"
+          onBlur={(e) => handleInputChange('location', e.target.value)}/> */}
+
         </div>
 
         <div>
