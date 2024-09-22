@@ -5,10 +5,18 @@ import { AI_PROMPT, SelectBudgteOptions, SelectTravelList } from '@/components/c
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { chatSession } from '@/servies/Aimodel';
+import { auth, provider, signInWithPopup,db } from "../firebase/firebse"; // Ensure correct path
+import { useNavigate } from "react-router-dom";
+import { setDoc,doc } from "firebase/firestore";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { getAuth } from 'firebase/auth';
 
 function CreateTrip() {
   const [place,setPlace] = useState();
   const [formdata, setFormdata] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading,setLoading] = useState(false);
+  const navigate = useNavigate();
 
   let handleInputChange = (name,value)=>{
 
@@ -18,11 +26,46 @@ function CreateTrip() {
     })
   } 
 
+  const SaveAiTrip = async(Tripdata)=>{
+    setLoading(true);
+    const docID = Date.now().toString();
+    const email = auth.currentUser.email;
+    await setDoc(doc(db, "AITrips", docID), {
+      userSelection:formdata,
+      tripdata:JSON.parse(Tripdata),
+      email:email,
+      id:docID
+    });
+    setLoading(false);
+  }
   const onCreateTrip = async ()=>{
+    if (!auth.currentUser) {
+      // If the user is not logged in, prompt them to sign in
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const loggedInUser = result.user;
+
+        console.log("User signed in: ", loggedInUser);
+
+        // Now, the user is signed in, you can navigate to the trip creation page
+        navigate("/create-trip");
+      } catch (error) {
+        setError(error.message);
+        loading(false);
+        console.error("Error during Google Sign-In: ", error);
+      }
+    } else {
+      // If the user is already logged in, proceed to trip creation
+      navigate("/create-trip");
+    }
+
+
+
     if(formdata?.noOfDays>5 || !formdata?.budget || !formdata?.noOfDays || !formdata?.location || !formdata?.traveler){
       toast("Fill all the valid details !!!")
       return;
     }
+    setLoading(true);
     //.replace('{location}', formdata?.location?.lable)     for when add google auto place api integrate
     const FINAL_PROMPT = AI_PROMPT
     .replace('{location}', formdata?.location?.label)
@@ -36,10 +79,15 @@ function CreateTrip() {
     const result = await chatSession.sendMessage(FINAL_PROMPT);
 
     console.log(result?.response?.text());
+    setLoading(false);
+    SaveAiTrip(result?.response?.text())
   }
   useEffect(()=>{
     console.log(formdata);
   },[formdata])
+
+
+
 
   return (
     <div className='sm:px-10 md:px-32 lg:px-56 xl:px-72 px-5 mt-10'>
@@ -62,7 +110,7 @@ function CreateTrip() {
         </div>
 
         <div>
-          <h2 className='text-lg mb-3'>What is your destination of choice?</h2>
+          <h2 className='text-lg mb-3'>How many days are you planning your trip?</h2>
           <Input placeholder={'ex-3'} type="number"
           onChange={(e) => handleInputChange('noOfDays', e.target.value)}/>
         </div>
@@ -101,8 +149,10 @@ function CreateTrip() {
           </div>
         </div>
       </div>
-      <div className='my-8 flex justify-end' onClick={()=>onCreateTrip()}>
-        <Button>Create Trip</Button>
+      <div className='my-8 flex justify-end' >
+        <Button onClick={()=>onCreateTrip()}
+         disabled = {loading}>
+          {loading?<AiOutlineLoading3Quarters className="h-7 w-7 animate-spin" /> :'Create Trip'}</Button>
       </div>
     </div>
 
